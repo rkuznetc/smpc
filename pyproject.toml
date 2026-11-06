@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smpc"
+version = "0.1.0"
+description = "Совместный анализ клиентских баз банка и телекома: PSI, PSI-CA, PIS (MVP)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "openmined-psi>=2.0.6",
+    "phe>=1.5",
+    "pandas>=2.0",
+    "pyarrow>=14",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+smpc-demo = "smpc.demo:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
