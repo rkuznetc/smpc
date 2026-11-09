@@ -6,10 +6,14 @@
     2.  PIS     — банк получает число общих клиентов и сумму TARGET
                   по бинам признака телекома. Сейчас это ПРОТОТИП:
                   сопоставление не приватное (см. README, раздел «Ограничения»).
+    3.  ML      — логистическая регрессия с приближённым градиентом:
+                  открыто (ml/approx.py) или по CKKS (he/ckks.py).
+                  Сравнение «банк» против «банк + телеком»:
+                  experiments/bank_vs_joint.py.
 """
 
 from smpc.parties import Bank, Telecom
 from smpc.channel import Channel
 
 __all__ = ["Bank", "Telecom", "Channel"]
-__version__ = "0.1.0"
+__version__ = "0.2.0"
