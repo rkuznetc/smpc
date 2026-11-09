@@ -99,3 +99,48 @@ def subsample(frame: pd.DataFrame, n: int | None, seed: int = 0) -> pd.DataFrame
     if n is None or n >= len(frame):
         return frame
     return frame.sample(n=n, random_state=seed).reset_index(drop=True)
+
+
+# ---------------------------------------------------------------------------
+# Полные таблицы для ML-эксперимента (логика ноутбуков 04 и 05).
+# PSI работает только с ID; признаки здесь нужны для обучения моделей.
+# ---------------------------------------------------------------------------
+
+def _require_columns(frame: pd.DataFrame, columns: list[str], side: str) -> None:
+    missing = [c for c in columns if c not in frame.columns]
+    if missing:
+        raise KeyError(f"В таблице «{side}» нет колонок: {missing}")
+
+
+def _with_str_id(frame: pd.DataFrame) -> pd.DataFrame:
+    """Убирает строки без ID, добавляет строковую колонку ID, оставляет первое вхождение ID."""
+    frame = frame.dropna(subset=[ID_COLUMN]).copy()
+    frame.insert(0, "ID", normalize_ids(frame[ID_COLUMN]).to_numpy())
+    frame = frame.drop_duplicates("ID").drop(columns=[ID_COLUMN])
+    return frame.reset_index(drop=True)
+
+
+def load_bank_full(path: str | Path) -> pd.DataFrame:
+    """Все столбцы банка для ML: ID (str), TARGET (0/1) и остальные признаки.
+
+    Строки без TARGET отбрасываются; конфликтующие TARGET для одного ID — ошибка.
+    """
+    frame = pd.read_parquet(path)
+    _require_columns(frame, [ID_COLUMN, TARGET_COLUMN], "банк")
+    frame = frame.dropna(subset=[ID_COLUMN, TARGET_COLUMN])
+    prepare_bank(frame)  # проверки: конфликтующие TARGET, бинарность
+    out = _with_str_id(frame)
+    out[TARGET_COLUMN] = out[TARGET_COLUMN].astype("int64")
+    return out
+
+
+def load_telecom_full(path: str | Path) -> pd.DataFrame:
+    """Все столбцы телекома для ML: ID (str) и все признаки."""
+    frame = pd.read_parquet(path)
+    _require_columns(frame, [ID_COLUMN], "телеком")
+    return _with_str_id(frame)
+
+
+def align_to_ids(frame: pd.DataFrame, ids: list[str]) -> pd.DataFrame:
+    """Оставляет строки с указанными ID в порядке ids (после PSI)."""
+    return frame.set_index("ID").loc[ids].reset_index()

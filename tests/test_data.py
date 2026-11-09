@@ -56,3 +56,35 @@ def test_subsample():
     frame = pd.DataFrame({"x": range(100)})
     assert len(subsample(frame, 10, seed=1)) == 10
     assert subsample(frame, None) is frame
+
+
+def test_load_bank_full_keeps_features_and_drops_missing_target(tmp_path):
+    from smpc.data import load_bank_full
+
+    pd.DataFrame({
+        "SK_ID_CURR": [10, 10, 11, 12],
+        "TARGET": [1, 1, 0, np.nan],
+        "AMT": [1.0, 1.0, 2.0, 3.0],
+    }).to_parquet(tmp_path / "b.parquet")
+    out = load_bank_full(tmp_path / "b.parquet")
+    assert out["ID"].tolist() == ["10", "11"]
+    assert out["TARGET"].tolist() == [1, 0]
+    assert "AMT" in out.columns and "SK_ID_CURR" not in out.columns
+
+
+def test_load_bank_full_rejects_conflicting_target(tmp_path):
+    from smpc.data import load_bank_full
+
+    pd.DataFrame({"SK_ID_CURR": [1, 1], "TARGET": [0, 1], "AMT": [1.0, 2.0]}).to_parquet(tmp_path / "b.parquet")
+    with pytest.raises(ValueError):
+        load_bank_full(tmp_path / "b.parquet")
+
+
+def test_load_telecom_full_and_align(tmp_path):
+    from smpc.data import align_to_ids, load_telecom_full
+
+    pd.DataFrame({"SK_ID_CURR": [3, 1, 2], "F": [0.3, 0.1, 0.2]}).to_parquet(tmp_path / "t.parquet")
+    telecom = load_telecom_full(tmp_path / "t.parquet")
+    aligned = align_to_ids(telecom, ["2", "1"])
+    assert aligned["ID"].tolist() == ["2", "1"]
+    assert aligned["F"].tolist() == [0.2, 0.1]
